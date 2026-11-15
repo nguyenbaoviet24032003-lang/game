@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phàm Nhân Tu Tiên - Web RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --accent-gold: #fbbf24;
+            --hp-color: #ef4444;
+            --xp-color: #3b82f6;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(15, 23, 42, 1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, rgba(30, 27, 75, 0.8) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, rgba(15, 23, 42, 1) 0, transparent 50%);
+            background-attachment: fixed;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .font-xianxia {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .panel-glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Thanh cuộn phong cách */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        /* Hiệu ứng thanh tiến trình */
+        .progress-bar-inner {
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Nút bấm tương tác */
+        .btn-action {
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-action:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+        .btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        /* Hiệu ứng đột phá */
+        @keyframes breakthrough-flash {
+            0% { box-shadow: 0 0 0 rgba(251, 191, 36, 0); transform: scale(1); }
+            50% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.8); transform: scale(1.02); }
+            100% { box-shadow: 0 0 0 rgba(251, 191, 36, 0); transform: scale(1); }
+        }
+        .anim-breakthrough {
+            animation: breakthrough-flash 1s ease-out;
+        }
+
+        /* Nhật ký log */
+        .log-entry {
+            animation: slideIn 0.3s ease-out;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .text-gold { color: var(--accent-gold); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-2 md:p-6">
+
+    <!-- Header -->
+    <header class="text-center mb-6 mt-2">
+        <h1 class="text-4xl md:text-5xl font-bold font-xianxia text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]">
+            Phàm Nhân Tu Tiên
+        </h1>
+        <p class="text-slate-400 mt-2 italic text-sm md:text-base">Mệnh do ta, không do trời!</p>
+    </header>
+
+    <!-- Main Content: 3 Columns Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Cột 1: Thông tin nhân vật -->
+        <section id="char-panel" class="panel-glass rounded-xl p-5 md:h-[70vh] flex flex-col">
+            <h2 class="text-xl font-semibold mb-4 text-slate-200 border-b border-slate-600 pb-2 font-xianxia">
+                <span class="mr-2">👤</span> Thông Tin Đạo Hữu
+            </h2>
+            
+            <div class="flex-1 flex flex-col gap-4">
+                <div class="text-center bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                    <div class="text-sm text-slate-400 uppercase tracking-widest mb-1">Cảnh Giới</div>
+                    <div id="realm-display" class="text-2xl font-bold text-gold font-xianxia drop-shadow-md">Luyện Khí Kỳ</div>
+                </div>
+
+                <!-- Sinh Lực (HP) -->
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-red-300 font-semibold">Sinh Lực (HP)</span>
+                        <span id="hp-text" class="text-red-200">100 / 100</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-700">
+                        <div id="hp-bar" class="bg-red-600 h-2.5 rounded-full progress-bar-inner shadow-[0_0_8px_rgba(220,38,38,0.6)]" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <!-- Tu Vi (XP) -->
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-blue-300 font-semibold">Tu Vi</span>
+                        <span id="xp-text" class="text-blue-200">0 / 100</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-700">
+                        <div id="xp-bar" class="bg-blue-500 h-2.5 rounded-full progress-bar-inner shadow-[0_0_8px_rgba(59,130,246,0.6)]" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Chỉ số khác -->
+                <div class="grid grid-cols-2 gap-3 mt-2">
+                    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                        <div class="text-xs text-slate-400 mb-1">Tấn Công</div>
+                        <div class="text-lg font-bold text-orange-400">⚔ <span id="atk-text">10</span></div>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                        <div class="text-xs text-slate-400 mb-1">Linh Thạch</div>
+                        <div class="text-lg font-bold text-emerald-400">💎 <span id="gold-text">10</span></div>
+                    </div>
+                </div>
+                
+                <div class="mt-auto pt-4 text-xs text-slate-500 text-center italic">
+                    Tích lũy Tu vi để đột phá cảnh giới mới.
+                </div>
+            </div>
+        </section>
+
+        <!-- Cột 2: Khu vực Hành động -->
+        <section class="panel-glass rounded-xl p-5 md:h-[70vh] flex flex-col">
+            <h2 class="text-xl font-semibold mb-4 text-slate-200 border-b border-slate-600 pb-2 font-xianxia">
+                <span class="mr-2">⚡</span> Hành Động
+            </h2>
+            
+            <div id="action-buttons" class="flex flex-col gap-4 flex-1 justify-center">
+                <!-- Bế Quan -->
+                <button onclick="beQuan()" class="btn-action w-full py-4 px-6 bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 border border-slate-500 rounded-lg text-left group flex items-center justify-between shadow-lg">
+                    <div>
+                        <div class="text-lg font-bold text-blue-100 group-hover:text-white font-xianxia">🧘‍♂️ Bế Quan Tu Luyện</div>
+                        <div class="text-xs text-slate-400 mt-1">An toàn. Tăng một ít Tu vi.</div>
+                    </div>
+                    <span class="text-blue-400">+Tu Vi</span>
+                </button>
+
+                <!-- Đi Huyết Sắc Cấm Địa -->
+                <button onclick="sanYeuThu()" class="btn-action w-full py-4 px-6 bg-gradient-to-r from-red-900 to-rose-900 hover:from-red-800 hover:to-rose-800 border border-red-700 rounded-lg text-left group flex items-center justify-between shadow-lg shadow-red-900/20">
+                    <div>
+                        <div class="text-lg font-bold text-red-100 group-hover:text-white font-xianxia">🐉 Huyết Sắc Cấm Địa</div>
+                        <div class="text-xs text-red-300 mt-1">Săn Yêu Thú. Tốn HP, rủi ro cao, lợi ích lớn.</div>
+                    </div>
+                    <span class="text-red-400">-HP / +L.Thạch</span>
+                </button>
+
+                <!-- Uống Đan Dược -->
+                <button onclick="uongDanDuoc()" class="btn-action w-full py-4 px-6 bg-gradient-to-r from-emerald-800 to-green-900 hover:from-emerald-700 hover:to-green-800 border border-emerald-600 rounded-lg text-left group flex items-center justify-between shadow-lg shadow-emerald-900/20">
+                    <div>
+                        <div class="text-lg font-bold text-emerald-100 group-hover:text-white font-xianxia">💊 Cắn Thuốc (Đan Dược)</div>
+                        <div class="text-xs text-emerald-300 mt-1">Tốn <span id="heal-cost">5</span> Linh Thạch để hồi đầy HP.</div>
+                    </div>
+                    <span class="text-emerald-400">MAX HP</span>
+                </button>
+            </div>
+
+            <!-- Màn hình Game Over / Hồi sinh -->
+            <div id="game-over-screen" class="hidden flex-col items-center justify-center flex-1">
+                <div class="text-4xl text-red-600 font-xianxia font-bold mb-2 animate-bounce">Đạo Tiêu Thân Tử!</div>
+                <p class="text-slate-400 mb-6 text-center text-sm">Tu tiên vốn là đi ngược với trời, một bước sẩy chân, vạn kiếp bất phục.</p>
+                <button onclick="resetGame()" class="px-8 py-3 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg shadow-lg shadow-red-500/50 transition-all hover:scale-105 font-xianxia">
+                    Luân Hồi Chuyển Thế (Chơi Lại)
+                </button>
+            </div>
+        </section>
+
+        <!-- Cột 3: Nhật ký tu tiên -->
+        <section class="panel-glass rounded-xl p-5 md:h-[70vh] flex flex-col">
+            <h2 class="text-xl font-semibold mb-4 text-slate-200 border-b border-slate-600 pb-2 font-xianxia flex justify-between items-center">
+                <span><span class="mr-2">📜</span> Nhật Ký Tu Tiên</span>
+                <button onclick="clearLog()" class="text-xs text-slate-500 hover:text-slate-300 font-sans font-normal">Xóa log</button>
+            </h2>
+            
+            <div id="log-container" class="flex-1 overflow-y-auto pr-2 flex flex-col text-sm space-y-1">
+                <!-- Log entries will go here -->
+                <div class="log-entry text-slate-400 italic text-center py-4 border-none">
+                    Nhật ký ghi lại quá trình gian nan tu tiên của ngươi...
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- HỆ THỐNG DỮ LIỆU ---
+        const REALMS = [
+            "Luyện Khí Kỳ", 
+            "Trúc Cơ Kỳ", 
+            "Kết Đan Kỳ", 
+            "Nguyên Anh Kỳ", 
+            "Hóa Thần Kỳ", 
+            "Luyện Hư Kỳ", 
+            "Hợp Thể Kỳ", 
+            "Đại Thừa Kỳ",
+            "Độ Kiếp Kỳ (MAX)"
+        ];
+
+        // Trạng thái mặc định ban đầu
+        const DEFAULT_STATE = {
+            realmIndex: 0,
+            hp: 100,
+            maxHp: 100,
+            atk: 10,
+            tuVi: 0,
+            maxTuVi: 100,
+            linhThach: 15,
+            isDead: false
+        };
+
+        // Trạng thái hiện tại
+        let state = { ...DEFAULT_STATE };
+
+        // --- CÁC PHẦN TỬ DOM ---
+        const UI = {
+            hpText: document.getElementById('hp-text'),
+            hpBar: document.getElementById('hp-bar'),
+            xpText: document.getElementById('xp-text'),
+            xpBar: document.getElementById('xp-bar'),
+            atkText: document.getElementById('atk-text'),
+            goldText: document.getElementById('gold-text'),
+            realmDisplay: document.getElementById('realm-display'),
+            charPanel: document.getElementById('char-panel'),
+            logContainer: document.getElementById('log-container'),
+            actionButtons: document.getElementById('action-buttons'),
+            gameOverScreen: document.getElementById('game-over-screen'),
+            healCost: document.getElementById('heal-cost')
+        };
+
+        // --- HÀM CẬP NHẬT GIAO DIỆN ---
+        function updateUI() {
+            // Ngăn hp/tu vi âm
+            if(state.hp < 0) state.hp = 0;
+            if(state.tuVi > state.maxTuVi) state.tuVi = state.maxTuVi; // Chỉ hiển thị đầy trước khi đột phá
+
+            // Cập nhật text
+            UI.hpText.textContent = `${Math.floor(state.hp)} / ${state.maxHp}`;
+            UI.xpText.textContent = `${Math.floor(state.tuVi)} / ${state.maxTuVi}`;
+            UI.atkText.textContent = state.atk;
+            UI.goldText.textContent = state.linhThach;
+            UI.realmDisplay.textContent = REALMS[state.realmIndex];
+            
+            // Cập nhật giá máu (tăng theo cấp)
+            UI.healCost.textContent = getHealCost();
+
+            // Cập nhật thanh %
+            const hpPercent = Math.max(0, (state.hp / state.maxHp) * 100);
+            const xpPercent = Math.min(100, (state.tuVi / state.maxTuVi) * 100);
+            
+            UI.hpBar.style.width = `${hpPercent}%`;
+            UI.xpBar.style.width = `${xpPercent}%`;
+
+            // Đổi màu thanh máu nếu thấp
+            if (hpPercent < 30) {
+                UI.hpBar.classList.replace('bg-red-600', 'bg-red-800');
+                UI.hpText.classList.add('text-red-500', 'font-bold', 'animate-pulse');
+            } else {
+                UI.hpBar.classList.replace('bg-red-800', 'bg-red-600');
+                UI.hpText.classList.remove('text-red-500', 'font-bold', 'animate-pulse');
+            }
+        }
+
+        // Tính chi phí đan dược
+        function getHealCost() {
+            return 5 * Math.pow(2, state.realmIndex);
+        }
+
+        // --- HỆ THỐNG NHẬT KÝ (LOG) ---
+        function addLog(msg, type = 'normal') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            // Thời gian thực
+            const time = new Date().toLocaleTimeString('vi-VN', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
+            let timeSpan = `<span class="text-slate-500 text-xs mr-2">[${time}]</span>`;
+
+            // Tô màu theo loại tin nhắn
+            let colorClass = 'text-slate-300';
+            if (type === 'gain') colorClass = 'text-green-400';
+            else if (type === 'damage' || type === 'error') colorClass = 'text-red-400';
+            else if (type === 'event') colorClass = 'text-yellow-400 font-semibold';
+            else if (type === 'breakthrough') colorClass = 'text-fuchsia-400 font-bold text-base';
+            else if (type === 'death') colorClass = 'text-red-600 font-bold text-lg';
+
+            entry.innerHTML = `${timeSpan} <span class="${colorClass}">${msg}</span>`;
+            
+            UI.logContainer.appendChild(entry);
+            
+            // Auto scroll to bottom
+            UI.logContainer.scrollTop = UI.logContainer.scrollHeight;
+
+            // Giới hạn số lượng log để tránh lag (giữ 50 log mới nhất)
+            if (UI.logContainer.childElementCount > 50) {
+                UI.logContainer.removeChild(UI.logContainer.firstChild);
+            }
+        }
+
+        function clearLog() {
+            UI.logContainer.innerHTML = '';
+            addLog('Đã xóa tàn tích trí nhớ...');
+        }
+
+        // --- CÁC HÀNH ĐỘNG CỦA NGƯỜI CHƠI ---
+
+        // 1. Bế Quan (An toàn, XP ít)
+        function beQuan() {
+            if (state.isDead) return;
+            if (state.realmIndex >= REALMS.length - 1) {
+                addLog('Ngươi đã đạt đỉnh phong, không thể bế quan thêm!', 'error');
+                return;
+            }
+
+            // XP nhận được tăng theo cấp
+            const baseGain = 15;
+            const multiplier = Math.pow(1.5, state.realmIndex);
+            const gainedXp = Math.floor((baseGain + Math.random() * 10) * multiplier);
+
+            state.tuVi += gainedXp;
+            addLog(`Ngươi đả tọa bế quan, hấp thu linh khí thiên địa, nhận ${gainedXp} Tu vi.`, 'normal');
+            
+            checkBreakthrough();
+            updateUI();
+        }
+
+        // 2. Đi Tới Huyết Sắc Cấm Địa (Combat)
+        function sanYeuThu() {
+            if (state.isDead) return;
+            if (state.realmIndex >= REALMS.length - 1) {
+                addLog('Yêu thú phàm giới không chịu nổi 1 cái nhìn của ngươi.', 'event');
+                return;
+            }
+
+            const rand = Math.random();
+            const isDodge = rand < 0.20; // 20% né
+            const isCrit = rand > 0.80;  // 20% bạo kích
+
+            // Sát thương quái gây ra = 10% đến 30% máu tối đa
+            let dmgTaken = Math.floor(state.maxHp * (0.1 + Math.random() * 0.2));
+            
+            if (isDodge) {
+                dmgTaken = 0;
+                addLog('Thân pháp quỷ mị! Ngươi né được toàn bộ công kích của Yêu thú.', 'gain');
+            } else {
+                state.hp -= dmgTaken;
+            }
+
+            // Kiểm tra chết
+            if (state.hp <= 0) {
+                state.hp = 0;
+                addLog(`Bị Yêu thú cắn xé! Ngươi nhận ${dmgTaken} sát thương.`, 'damage');
+                gameOver();
+                return;
+            }
+
+            // Nếu không chết, tính chiến lợi phẩm
+            let xpMultiplier = 2.5; // Gấp 2.5 lần bế quan
+            let goldGain = Math.floor((2 + Math.random() * 4) * Math.pow(1.5, state.realmIndex));
+
+            if (isCrit) {
+                xpMultiplier *= 1.5;
+                goldGain *= 2;
+                addLog(`Bạo kích! Khí kiếm tung hoành, ngươi miểu sát Yêu thú.`, 'event');
+            }
+
+            const gainedXp = Math.floor((30 + Math.random() * 20) * Math.pow(1.5, state.realmIndex) * xpMultiplier);
+            
+            state.tuVi += gainedXp;
+            state.linhThach += goldGain;
+
+            let battleMsg = `Chém giết Yêu thú! `;
+            if (dmgTaken > 0) battleMsg += `Mất ${dmgTaken} máu. `;
+            battleMsg += `Nhận ${gainedXp} Tu vi và ${goldGain} Linh thạch.`;
+
+            addLog(battleMsg, dmgTaken > 0 ? 'normal' : 'gain');
+
+            checkBreakthrough();
+            updateUI();
+        }
+
+        // 3. Uống Đan Dược
+        function uongDanDuoc() {
+            if (state.isDead) return;
+            
+            const cost = getHealCost();
+
+            if (state.hp >= state.maxHp) {
+                addLog('Khí huyết đang cuồn cuộn, không cần dùng thuốc phí phạm!', 'error');
+                return;
+            }
+
+            if (state.linhThach < cost) {
+                addLog(`Túi tiền rỗng tuếch! Cần ${cost} Linh thạch để mua đan dược.`, 'error');
+                return;
+            }
+
+            state.linhThach -= cost;
+            const healAmount = state.maxHp - state.hp;
+            state.hp = state.maxHp;
+
+            addLog(`Giao ra ${cost} Linh thạch mua Hồi Huyết Đan. Hồi phục ${healAmount} Sinh lực!`, 'gain');
+            updateUI();
+        }
+
+        // --- CƠ CHẾ ĐỘT PHÁ (LEVEL UP) ---
+        function checkBreakthrough() {
+            // Loop in case of massive XP gain jumping multiple levels
+            while (state.tuVi >= state.maxTuVi && state.realmIndex < REALMS.length - 1) {
+                // Trừ đi lượng XP yêu cầu
+                state.tuVi -= state.maxTuVi;
+                
+                // Tăng cảnh giới
+                state.realmIndex++;
+                
+                // Tăng chỉ số mạnh mẽ
+                state.maxHp = Math.floor(state.maxHp * 2.2);
+                state.hp = state.maxHp; // Hồi đầy máu khi đột phá
+                state.atk = Math.floor(state.atk * 2.5);
+                state.maxTuVi = Math.floor(state.maxTuVi * 2.5); // Yêu cầu XP cấp sau gấp 2.5 lần
+
+                // Ghi log
+                addLog(`BÙM! Thiên địa dị tượng! Ngươi đã đột phá thành công tới cảnh giới 【${REALMS[state.realmIndex]}】!`, 'breakthrough');
+                addLog(`Sinh lực và Tấn công tăng vọt! Khôi phục toàn bộ trạng thái.`, 'event');
+
+                // Hiệu ứng nhấp nháy UI
+                triggerBreakthroughAnimation();
+            }
+
+            if (state.realmIndex >= REALMS.length - 1) {
+                state.tuVi = state.maxTuVi; // Đạt đỉnh
+            }
+        }
+
+        function triggerBreakthroughAnimation() {
+            UI.charPanel.classList.remove('anim-breakthrough');
+            // Trigger reflow to restart animation
+            void UI.charPanel.offsetWidth;
+            UI.charPanel.classList.add('anim-breakthrough');
+        }
+
+        // --- LOGIC THUA / RESET ---
+        function gameOver() {
+            state.isDead = true;
+            updateUI();
+            
+            addLog('Chân nguyên cạn kiệt, hồn phi phách tán! Đạo Tiêu Thân Tử!', 'death');
+            
+            // Đổi UI
+            UI.actionButtons.classList.add('hidden');
+            UI.gameOverScreen.classList.remove('hidden');
+            UI.gameOverScreen.classList.add('flex');
+            
+            UI.charPanel.classList.add('grayscale', 'opacity-70');
+        }
+
+        function resetGame() {
+            // Khôi phục state mặc định
+            state = { ...DEFAULT_STATE };
+            
+            // Xóa hiệu ứng chết
+            UI.charPanel.classList.remove('grayscale', 'opacity-70');
+            UI.actionButtons.classList.remove('hidden');
+            UI.gameOverScreen.classList.add('hidden');
+            UI.gameOverScreen.classList.remove('flex');
+
+            addLog('-----------------------------------', 'normal');
+            addLog('Luân hồi xoay chuyển. Ngươi chuyển sinh mang theo ký ức, bắt đầu lại con đường tu tiên.', 'event');
+            
+            updateUI();
+        }
+
+        // --- KHỞI TẠO GAME ---
+        window.onload = () => {
+            updateUI();
+            addLog('Chào mừng Đạo hữu đến với thế giới tu tiên. Nắm vững bản tâm, nghịch thiên cải mệnh!', 'event');
+        };
+
+    </script>
+</body>
+</html>
